@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weather</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sky:    #1a6ef5;
+      --sky-dk: #0f4bbf;
+      --sky-lt: #e8f0ff;
+      --ink:    #0d1b2a;
+      --muted:  #5a6a7e;
+      --card:   #ffffff;
+      --bg:     #f0f4fb;
+      --border: rgba(0,0,0,0.08);
+      --radius: 20px;
+      --danger: #e03c3c;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 3rem 1rem 4rem;
+      color: var(--ink);
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    header h1 {
+      font-size: clamp(1.8rem, 5vw, 2.6rem);
+      font-weight: 300;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+    }
+    header h1 span {
+      font-weight: 600;
+      color: var(--sky);
+    }
+    header p {
+      margin-top: 0.4rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    /* Search */
+    .search-wrap {
+      width: 100%;
+      max-width: 480px;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+    .search-wrap input {
+      width: 100%;
+      padding: 0.85rem 3.5rem 0.85rem 1.25rem;
+      border: 1.5px solid var(--border);
+      border-radius: 50px;
+      font-size: 1rem;
+      font-family: inherit;
+      background: var(--card);
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.2s;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .search-wrap input::placeholder { color: var(--muted); }
+    .search-wrap input:focus { border-color: var(--sky); }
+
+    .search-wrap button {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: var(--sky);
+      color: #fff;
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .search-wrap button:hover { background: var(--sky-dk); }
+    .search-wrap button:active { transform: translateY(-50%) scale(0.93); }
+
+    /* States */
+    .state {
+      text-align: center;
+      padding: 2rem;
+      max-width: 380px;
+      display: none;
+    }
+    .state.visible { display: block; }
+
+    .state-icon {
+      font-size: 3rem;
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+    .state-title {
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--ink);
+    }
+    .state-sub {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-top: 0.3rem;
+      line-height: 1.5;
+    }
+
+    /* Loading spinner */
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--sky-lt);
+      border-top-color: var(--sky);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Error */
+    #error-state .state-icon { color: var(--danger); }
+    #error-state .state-title { color: var(--danger); }
+
+    /* Weather card */
+    #weather-card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 30px rgba(0,0,0,0.07);
+      overflow: hidden;
+      display: none;
+    }
+    #weather-card.visible { display: block; }
+
+    .card-hero {
+      background: linear-gradient(145deg, var(--sky) 0%, #1056c9 100%);
+      padding: 2rem 2rem 2.5rem;
+      color: #fff;
+      position: relative;
+    }
+    .card-hero-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .city-name {
+      font-size: 1.5rem;
+      font-weight: 500;
+      line-height: 1.2;
+    }
+    .city-coords {
+      font-size: 0.78rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .weather-icon-big {
+      font-size: 3.5rem;
+      line-height: 1;
+    }
+
+    .temp-display {
+      margin-top: 1.25rem;
+    }
+    .temp-main {
+      font-size: clamp(3.5rem, 12vw, 5rem);
+      font-weight: 300;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+    .temp-main sup {
+      font-size: 0.4em;
+      vertical-align: top;
+      margin-top: 0.25em;
+      font-weight: 400;
+    }
+    .weather-desc {
+      font-size: 1rem;
+      opacity: 0.85;
+      margin-top: 0.4rem;
+      text-transform: capitalize;
+    }
+    .feels-like {
+      font-size: 0.82rem;
+      opacity: 0.65;
+      margin-top: 0.2rem;
+    }
+
+    /* Stat grid */
+    .card-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+    }
+    .stat-item {
+      padding: 1.25rem 1rem;
+      border-right: 1px solid var(--border);
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+    .stat-item:last-child { border-right: none; }
+
+    .stat-icon {
+      font-size: 1.4rem;
+      margin-bottom: 0.4rem;
+    }
+    .stat-value {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.15rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* Extras row */
+    .card-extras {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0;
+    }
+    .extra-item {
+      padding: 1.1rem 1.25rem;
+      border-top: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .extra-item:nth-child(even) { border-right: none; }
+    .extra-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--sky-lt);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .extra-info .val {
+      font-size: 0.98rem;
+      font-weight: 500;
+      color: var(--ink);
+    }
+    .extra-info .lbl {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    /* Updated time */
+    .card-footer {
+      padding: 0.75rem 1.25rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* Chart card — mirrors #weather-card styling exactly */
+    #chart-card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 30px rgba(0,0,0,0.07);
+      overflow: hidden;
+      display: none;
+      margin-top: 1.5rem;
+      padding: 1.5rem 1.5rem 1.25rem;
+      opacity: 0;
+    }
+    #chart-card.visible {
+      display: block;
+      animation: chartFadeIn 0.4s ease forwards;
+    }
+    @keyframes chartFadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .chart-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 1rem;
+    }
+    .chart-wrap {
+      position: relative;
+      height: 220px;
+      width: 100%;
+    }
+    .chart-wrap canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* Responsive */
+    @media (max-width: 420px) {
+      body { padding: 2rem 0.75rem 3rem; }
+      .card-stats { grid-template-columns: repeat(3, 1fr); }
+      .card-extras { grid-template-columns: 1fr; }
+      .extra-item { border-right: none; }
+      .chart-wrap { height: 180px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Sky<span>Check</span></h1>
+    <p>Real-time weather for any city</p>
+  </header>
+
+  <div class="search-wrap">
+    <input
+      type="text"
+      id="city-input"
+      placeholder="Search a city — e.g. Tokyo, Paris…"
+      autocomplete="off"
+    />
+    <button id="search-btn" aria-label="Search">&#8594;</button>
+  </div>
+
+  <!-- Empty / idle state -->
+  <div class="state visible" id="idle-state">
+    <span class="state-icon">🌍</span>
+    <p class="state-title">Where in the world?</p>
+    <p class="state-sub">Enter any city name above to get live temperature, humidity, and wind data.</p>
+  </div>
+
+  <!-- Loading state -->
+  <div class="state" id="loading-state">
+    <div class="spinner"></div>
+    <p class="state-title">Fetching weather…</p>
+    <p class="state-sub">Checking the skies for you.</p>
+  </div>
+
+  <!-- Error state -->
+  <div class="state" id="error-state">
+    <span class="state-icon">⚠️</span>
+    <p class="state-title" id="error-title">City not found</p>
+    <p class="state-sub" id="error-msg">We couldn't find that city. Try another spelling or a nearby city.</p>
+  </div>
+
+  <!-- Weather card -->
+  <div id="weather-card">
+    <div class="card-hero">
+      <div class="card-hero-top">
+        <div>
+          <div class="city-name" id="w-city">—</div>
+          <div class="city-coords" id="w-coords"></div>
+        </div>
+        <div class="weather-icon-big" id="w-icon">☀️</div>
+      </div>
+      <div class="temp-display">
+        <div class="temp-main"><span id="w-temp">—</span><sup>°C</sup></div>
+        <div class="weather-desc" id="w-desc">—</div>
+        <div class="feels-like">Feels like <span id="w-feels">—</span>°C</div>
+      </div>
+    </div>
+
+    <div class="card-stats">
+      <div class="stat-item">
+        <div class="stat-icon">💧</div>
+        <div class="stat-value" id="w-humidity">—</div>
+        <div class="stat-label">Humidity</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-icon">🌬️</div>
+        <div class="stat-value" id="w-wind">—</div>
+        <div class="stat-label">Wind</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-icon">🔵</div>
+        <div class="stat-value" id="w-pressure">—</div>
+        <div class="stat-label">Pressure</div>
+      </div>
+    </div>
+
+    <div class="card-extras">
+      <div class="extra-item">
+        <div class="extra-icon">🌅</div>
+        <div class="extra-info">
+          <div class="val" id="w-precip">—</div>
+          <div class="lbl">Precipitation</div>
+        </div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-icon">👁️</div>
+        <div class="extra-info">
+          <div class="val" id="w-visibility">—</div>
+          <div class="lbl">Visibility</div>
+        </div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-icon">🌡️</div>
+        <div class="extra-info">
+          <div class="val" id="w-dewpoint">—</div>
+          <div class="lbl">Dew point</div>
+        </div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-icon">☁️</div>
+        <div class="extra-info">
+          <div class="val" id="w-cloud">—</div>
+          <div class="lbl">Cloud cover</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-footer" id="w-updated">Last updated —</div>
+  </div>
+
+  <!-- Hourly temperature chart card -->
+  <div id="chart-card">
+    <div class="chart-title">Temperature Trend (Next 24 Hours)</div>
+    <div class="chart-wrap">
+      <canvas id="temp-chart"></canvas>
+    </div>
+  </div>
+
+  <script>
+    // ── WMO weather code descriptions + icons
+    const WMO_CODES = {
+      0:  ['Clear sky', '☀️'],
+      1:  ['Mainly clear', '🌤️'],
+      2:  ['Partly cloudy', '⛅'],
+      3:  ['Overcast', '☁️'],
+      45: ['Foggy', '🌫️'],
+      48: ['Icy fog', '🌫️'],
+      51: ['Light drizzle', '🌦️'],
+      53: ['Drizzle', '🌦️'],
+      55: ['Heavy drizzle', '🌧️'],
+      61: ['Light rain', '🌧️'],
+      63: ['Rain', '🌧️'],
+      65: ['Heavy rain', '🌧️'],
+      71: ['Light snow', '🌨️'],
+      73: ['Snow', '❄️'],
+      75: ['Heavy snow', '❄️'],
+      77: ['Snow grains', '❄️'],
+      80: ['Light showers', '🌦️'],
+      81: ['Showers', '🌧️'],
+      82: ['Violent showers', '⛈️'],
+      85: ['Snow showers', '🌨️'],
+      86: ['Heavy snow showers', '❄️'],
+      95: ['Thunderstorm', '⛈️'],
+      96: ['Thunderstorm w/ hail', '⛈️'],
+      99: ['Thunderstorm w/ heavy hail', '⛈️'],
+    };
+
+    function describeCode(code) {
+      return WMO_CODES[code] || ['Unknown', '🌡️'];
+    }
+
+    // ── DOM refs
+    const cityInput  = document.getElementById('city-input');
+    const searchBtn  = document.getElementById('search-btn');
+    const idleState  = document.getElementById('idle-state');
+    const loadState  = document.getElementById('loading-state');
+    const errState   = document.getElementById('error-state');
+    const errTitle   = document.getElementById('error-title');
+    const errMsg     = document.getElementById('error-msg');
+    const weatherCard= document.getElementById('weather-card');
+    const chartCard  = document.getElementById('chart-card');
+
+    // ── Show / hide helpers
+    function showState(which) {
+      [idleState, loadState, errState].forEach(el => el.classList.remove('visible'));
+      weatherCard.classList.remove('visible');
+      chartCard.classList.remove('visible');
+      if (which === 'idle')    idleState.classList.add('visible');
+      if (which === 'loading') loadState.classList.add('visible');
+      if (which === 'error')   errState.classList.add('visible');
+      if (which === 'card')    weatherCard.classList.add('visible');
+    }
+
+    function showError(title, msg) {
+      errTitle.textContent = title;
+      errMsg.textContent   = msg;
+      showState('error');
+    }
+
+    // ── Geocode city → lat/lon via Open-Meteo Geocoding API
+    async function geocodeCity(city) {
+      const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`;
+      const res  = await fetch(url);
+      if (!res.ok) throw new Error('Geocoding API error');
+      const data = await res.json();
+      if (!data.results || data.results.length === 0) return null;
+      return data.results[0];
+    }
+
+    // ── Fetch weather for lat/lon via Open-Meteo
+    async function fetchWeather(lat, lon) {
+      const params = new URLSearchParams({
+        latitude:        lat,
+        longitude:       lon,
+        current:         [
+          'temperature_2m','relative_humidity_2m','apparent_temperature',
+          'weather_code','wind_speed_10m','surface_pressure',
+          'precipitation','visibility','dew_point_2m','cloud_cover'
+        ].join(','),
+        hourly:          'temperature_2m',
+        wind_speed_unit: 'kmh',
+        timezone:        'auto',
+      });
+      const url = `https://api.open-meteo.com/v1/forecast?${params}`;
+      const res  = await fetch(url);
+      if (!res.ok) throw new Error('Weather API error');
+      return res.json();
+    }
+
+    // ── Populate card with weather data
+    function populateCard(location, weather) {
+      const c = weather.current;
+      const [desc, icon] = describeCode(c.weather_code);
+
+      document.getElementById('w-city').textContent     = `${location.name}, ${location.country_code}`;
+      document.getElementById('w-coords').textContent   = `${location.latitude.toFixed(2)}°N ${location.longitude.toFixed(2)}°E`;
+      document.getElementById('w-icon').textContent     = icon;
+      document.getElementById('w-temp').textContent     = Math.round(c.temperature_2m);
+      document.getElementById('w-desc').textContent     = desc;
+      document.getElementById('w-feels').textContent    = Math.round(c.apparent_temperature);
+
+      document.getElementById('w-humidity').textContent   = `${c.relative_humidity_2m}%`;
+      document.getElementById('w-wind').textContent       = `${Math.round(c.wind_speed_10m)} km/h`;
+      document.getElementById('w-pressure').textContent   = `${Math.round(c.surface_pressure)} hPa`;
+
+      document.getElementById('w-precip').textContent     = `${c.precipitation} mm`;
+      document.getElementById('w-visibility').textContent = `${(c.visibility / 1000).toFixed(1)} km`;
+      document.getElementById('w-dewpoint').textContent   = `${Math.round(c.dew_point_2m)}°C`;
+      document.getElementById('w-cloud').textContent      = `${c.cloud_cover}%`;
+
+      const now = new Date();
+      document.getElementById('w-updated').textContent =
+        `Updated ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    // ── Render the 24-hour temperature chart
+    // Kept separate from populateCard() so existing card logic stays untouched.
+    let tempChart = null; // holds the Chart.js instance so we can destroy/recreate it on each search
+
+    function renderChart(weather) {
+      // ── TEMP DEBUG LOGGING (remove once the chart is confirmed working) ──
+      console.log('renderChart() called. Full weather object:', weather);
+      console.log('typeof Chart:', typeof Chart);
+
+      // Guard: if the Chart.js CDN failed to load (offline, blocked, etc.),
+      // skip silently instead of throwing and breaking the rest of handleSearch().
+      if (typeof Chart === 'undefined') {
+        console.warn('Chart.js did not load; skipping temperature chart. ' +
+          'Check the Network tab for a failed request to cdnjs.cloudflare.com.');
+        return;
+      }
+
+      const hourly = weather.hourly;
+      console.log('hourly object:', hourly);
+
+      if (!hourly || !Array.isArray(hourly.time) || !Array.isArray(hourly.temperature_2m)) {
+        console.warn('No hourly data in API response; skipping temperature chart.');
+        return;
+      }
+
+      // Open-Meteo returns hourly.time in LOCAL time (because of timezone: 'auto'),
+      // so build the "current hour" string from local date parts, not toISOString() (UTC).
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const nowLocal = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}`;
+
+      let startIndex = hourly.time.findIndex(t => t.slice(0, 13) === nowLocal);
+      console.log('nowLocal:', nowLocal, '| startIndex found:', startIndex);
+
+      // Make the chart render even if current-hour matching fails completely —
+      // fall back to the first 24 hours in the response rather than bailing out.
+      if (startIndex === -1) {
+        console.warn('Could not match current hour in hourly.time; falling back to index 0.');
+        startIndex = 0;
+      }
+
+      let next24Times = hourly.time.slice(startIndex, startIndex + 24);
+      let next24Temps = hourly.temperature_2m.slice(startIndex, startIndex + 24);
+
+      // Second fallback: if slicing from startIndex came up short (e.g. near the
+      // end of the array) or empty, just take the first 24 entries unconditionally
+      // so the chart always has something to draw.
+      if (next24Times.length === 0) {
+        console.warn('Slice from startIndex was empty; falling back to first 24 entries.');
+        next24Times = hourly.time.slice(0, 24);
+        next24Temps = hourly.temperature_2m.slice(0, 24);
+      }
+
+      console.log('next24Times:', next24Times);
+      console.log('next24Temps:', next24Temps);
+
+      if (next24Times.length === 0) {
+        console.warn('Hourly arrays are completely empty; cannot render chart.');
+        return;
+      }
+
+      // Convert ISO timestamps like "2026-06-17T14:00" into "14:00" labels
+      const labels = next24Times.map(t => t.slice(11, 16));
+
+      const chartCanvas = document.getElementById('temp-chart');
+      if (!chartCanvas) {
+        console.error('Canvas #temp-chart not found in the DOM.');
+        return;
+      }
+
+      // ── Defensive sizing fix ──────────────────────────────────────────
+      // Chart.js (with responsive:true) measures the canvas's parent
+      // dimensions at construction time. If the chart card was still
+      // display:none at that moment, the parent reports 0x0 and Chart.js
+      // silently draws into a zero-size surface — the #1 cause of a
+      // "card shows but graph is blank" bug. We guard against that here
+      // regardless of what order the calling code uses.
+      const wrap = chartCanvas.parentElement; // .chart-wrap
+      if (wrap.clientWidth === 0 || wrap.clientHeight === 0) {
+        console.warn(
+          'Chart container measured as 0x0 at render time ' +
+          `(width=${wrap.clientWidth}, height=${wrap.clientHeight}). ` +
+          'This usually means the card was still display:none when renderChart() ran. ' +
+          'Retrying on the next animation frame, after layout has settled.'
+        );
+        requestAnimationFrame(() => renderChart(weather));
+        return;
+      }
+
+      const ctx = chartCanvas.getContext('2d');
+
+      // Destroy the previous chart instance before drawing a new one,
+      // otherwise Chart.js stacks multiple charts on the same canvas
+      if (tempChart) {
+        tempChart.destroy();
+        tempChart = null;
+      }
+
+      tempChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Temperature (°C)',
+            data: next24Temps,
+            borderColor: '#1a6ef5',
+            backgroundColor: 'rgba(26, 110, 245, 0.08)',
+            borderWidth: 2.5,
+            pointRadius: 0,
+            pointHoverRadius: 5,
+            pointHoverBackgroundColor: '#1a6ef5',
+            pointHoverBorderColor: '#ffffff',
+            pointHoverBorderWidth: 2,
+            tension: 0.4,
+            fill: true,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#0d1b2a',
+              titleColor: '#ffffff',
+              bodyColor: '#ffffff',
+              padding: 10,
+              cornerRadius: 8,
+              displayColors: false,
+              callbacks: {
+                label: ctx => `${Math.round(ctx.parsed.y)}°C`
+              }
+            }
+          },
+          scales: {
+            x: {
+              title: { display: true, text: 'Time', color: '#5a6a7e', font: { size: 11 } },
+              grid: { display: false },
+              ticks: {
+                color: '#5a6a7e',
+                font: { size: 10 },
+                maxRotation: 0,
+                autoSkip: true,
+                maxTicksLimit: 8
+              }
+            },
+            y: {
+              title: { display: true, text: 'Temperature (°C)', color: '#5a6a7e', font: { size: 11 } },
+              grid: { color: 'rgba(0,0,0,0.06)' },
+              ticks: {
+                color: '#5a6a7e',
+                font: { size: 10 },
+                callback: val => `${val}°`
+              }
+            }
+          }
+        }
+      });
+
+      console.log('Chart.js instance created successfully:', tempChart);
+    }
+
+    // ── Main search handler
+    async function handleSearch() {
+      const city = cityInput.value.trim();
+      if (!city) { cityInput.focus(); return; }
+
+      showState('loading');
+
+      try {
+        const location = await geocodeCity(city);
+        if (!location) {
+          showError('City not found', `We couldn't find "${city}". Check the spelling or try a nearby city.`);
+          return;
+        }
+
+        const weather = await fetchWeather(location.latitude, location.longitude);
+        populateCard(location, weather);
+        showState('card');
+        chartCard.classList.add('visible'); // show the chart's container FIRST...
+        renderChart(weather);               // ...so Chart.js measures a real, laid-out canvas
+
+      } catch (err) {
+        console.error(err);
+        showError('Connection error', 'Unable to fetch weather data. Please check your internet connection and try again.');
+      }
+    }
+
+    // ── Event listeners
+    searchBtn.addEventListener('click', handleSearch);
+    cityInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') handleSearch();
+    });
+  </script>
+
+</body>
+</html>
