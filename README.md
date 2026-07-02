@@ -1,59 +1,94 @@
-# 🌦️ SkyCheck Weather App
+# 🌦️ SkyCheck – Weather App
 
-A responsive weather application built using **HTML, CSS, and JavaScript** that provides real-time weather information for cities around the world.
+A modern, responsive weather application built using **HTML, CSS, and JavaScript** that provides real-time weather information for cities around the world using the Open-Meteo API.
 
-## Features
+## 🚀 Live Demo
 
-* 🔍 Search weather by city name
-* 🌍 Real-time weather data retrieval
-* 🌡️ Current temperature display
-* 💧 Humidity information
-* 🌬️ Wind speed details
-* 🔵 Atmospheric pressure
-* 📍 Geographic coordinates
-* 🌎 Country and location details
-* 🌧️ Precipitation, visibility, dew point, and cloud cover data
-* 📈 24-hour temperature forecast graph
-* 📱 Clean and responsive user interface
-* ⚠️ Error handling for invalid city searches
+🔗 https://resplendent-marigold-a91c16.netlify.app/
 
-## Technologies Used
+---
 
-* HTML5
-* CSS3
-* JavaScript (ES6)
-* Open-Meteo API
-* Open-Meteo Geocoding API
-* Fetch API
-* Chart.js
+## ✨ Features
 
-## How It Works
+- 🔍 Search weather by any city worldwide
+- 🌡️ Real-time temperature and "Feels Like" temperature
+- 🌤️ Dynamic weather icons based on live conditions
+- 💨 Wind speed
+- 💧 Humidity
+- 🌧️ Precipitation
+- ☁️ Cloud cover
+- 👁️ Visibility
+- 🌡️ Dew point
+- 🔵 Atmospheric pressure
+- 📍 Country and geographic coordinates
+- 📈 Interactive 24-hour temperature forecast graph (Chart.js)
+- ⚡ Loading, idle, and error states
+- 📱 Fully responsive modern UI
+- 🎨 Clean card-based design with smooth animations
 
-1. Enter a city name in the search bar.
-2. The app sends the city name to the Open-Meteo Geocoding API.
-3. The API returns the city's latitude and longitude coordinates.
-4. These coordinates are used to fetch weather data from the Open-Meteo Weather API.
-5. The current weather conditions are displayed on the dashboard.
-6. Hourly temperature data is processed and displayed as a 24-hour forecast graph using Chart.js.
+---
 
-## Project Progress
+## 🛠️ Technologies Used
 
-### Day 1
+- HTML5
+- CSS3
+- JavaScript (ES6)
+- Open-Meteo Weather API
+- Open-Meteo Geocoding API
+- Chart.js
+- Fetch API
+- Netlify (Deployment)
 
-* Created the weather application layout
-* Built responsive UI components
-* Integrated Open-Meteo API
-* Added city search functionality
-* Displayed current weather information
+---
 
-### Day 2
+## ⚙️ How It Works
 
-* Added Chart.js integration
-* Implemented 24-hour temperature forecast visualization
-* Improved API data handling
-* Added additional weather metrics
-* Improved error handling and user experience
+1. Enter the name of any city.
+2. The app sends the city name to the **Open-Meteo Geocoding API**.
+3. The API returns the city's latitude and longitude.
+4. Those coordinates are sent to the **Open-Meteo Weather API**.
+5. Current weather data and a 24-hour hourly forecast are retrieved.
+6. The app displays the weather information along with an interactive temperature graph.
 
-## Author
+---
 
-Aarush Surya
+## 📅 Development Progress
+
+### ✅ v1.0
+- Basic weather search
+- Real-time weather data
+- Responsive UI
+- Weather icons
+- Error handling
+
+### ✅ v1.1
+- Improved weather card UI
+- Added humidity, pressure, visibility, precipitation, dew point, and cloud cover
+- Better loading and error states
+- Modern responsive layout
+
+### ✅ v1.2
+- Interactive 24-hour temperature forecast graph
+- Integrated Chart.js
+- Smooth chart animations
+- Successfully deployed on Netlify
+
+---
+
+## 🎯 Planned Features
+
+- 🌅 7-Day Weather Forecast
+- 📍 Detect user's current location
+- 🌙 Dark / Light Mode
+- ⭐ Save favorite cities
+- 🔄 Recent search history
+- 🌧️ Rain probability charts
+- 🌬️ Air Quality Index (AQI)
+- 🌄 Sunrise & Sunset times
+- 🌡️ Temperature unit toggle (°C / °F)
+
+---
+
+## 👨‍💻 Author
+
+**Aarush Surya**
